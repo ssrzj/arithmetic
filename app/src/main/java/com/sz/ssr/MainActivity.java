@@ -78,6 +78,9 @@ public class MainActivity extends AppCompatActivity {
         for(char c : S.toCharArray()){
             if(J.indexOf(c) != -1){
                 res++;
+
+
+
             }
         }
         return res;
@@ -117,6 +120,8 @@ public class MainActivity extends AppCompatActivity {
 
     public int uniqueMorseRepresentations(String[] words) {
 
+        LogUtil.i("尝试合并到其他分支去");
+        LogUtil.i("这个是develop分支的代码，为什么会出现再master分支里面");
         // HashSet 与Map 查询的差别
 
         // 判断数组中有多少少个不相同的数组 1、利用map,2利用HashSet.add(),过滤重复的
