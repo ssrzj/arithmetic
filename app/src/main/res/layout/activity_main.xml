@@ -1,33 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/container"
+<android.support.v4.widget.DrawerLayout android:layout_height="match_parent"
+    android:id="@+id/act_main_drawerLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity">
-
-    <TextView
-        android:id="@+id/message"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <RelativeLayout
+        android:id="@+id/act_main_fl_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <include
+            layout="@layout/include_main_title"
+            ></include>
+    </RelativeLayout>
+    <RelativeLayout
+        android:id="@+id/act_main_left_container"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="@dimen/activity_horizontal_margin"
-        android:layout_marginStart="@dimen/activity_horizontal_margin"
-        android:layout_marginTop="@dimen/activity_vertical_margin"
-        android:text="@string/title_home"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <android.support.design.widget.BottomNavigationView
-        android:id="@+id/navigation"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="0dp"
-        android:layout_marginStart="0dp"
-        android:background="?android:attr/windowBackground"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:menu="@menu/navigation" />
-
-</android.support.constraint.ConstraintLayout>
+        android:layout_gravity="start"
+        android:background="@color/white"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:id="@+id/act_main_left_ll_title"
+            android:layout_width="match_parent"
+            android:background="@drawable/default_avator"
+            android:orientation="vertical"
+            android:layout_height="150dp">
+        </LinearLayout>
+        <ListView
+            android:layout_marginTop="150dp"
+            android:id="@+id/act_main_left_list"
+            android:layout_width="match_parent"
+            android:dividerHeight="0.5dp"
+            android:divider="@color/gray"
+            android:layout_height="match_parent">
+        </ListView>
+    </RelativeLayout>
+</android.support.v4.widget.DrawerLayout>

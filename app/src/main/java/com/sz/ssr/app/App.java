@@ -7,9 +7,9 @@ import com.shenzhen.baselib.BaseLib;
 import com.shenzhen.baselib.utils.JsonUtil;
 
 public class App extends Application {
-    private Application mInstance;
+    private static Application mInstance;
     private Context mContext;
-    private App() {
+    public App() {
 
     }
     @Override
@@ -20,7 +20,7 @@ public class App extends Application {
         // 初始化外部lib
         BaseLib.getInstance().init(this); // BaseLib初始化
     }
-    public Application getInstance(){
+    public static Application getInstance(){
         if(mInstance==null){
             mInstance = new App();
         }
