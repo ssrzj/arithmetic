@@ -25,7 +25,10 @@ import com.shenzhen.baselib.utils.ViewUtil;
 import com.sz.ssr.activity.base.BaseActivity;
 import com.sz.ssr.utils.ScreenUtils;
 
+import java.sql.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -54,6 +57,13 @@ public class MainActivity extends BaseActivity {
         initAdapter();
         initView();
         loadData();
+//        [[1,1,0,0],[1,0,0,1],[0,1,1,1],[1,0,1,0]]
+        int [][] target =new int[][]{{1,1,0,0},{1,0,0,1},{0,1,1,1},{1,0,1,0}};
+        flipAndInvertImage(target);
+        // 1维数组反序
+        int [] array= new int[]{8,7,6,5,4,3,2,1};
+        invertArray(array);
+        arrayPairSum(array);
     }
 
     private void loadData() {
@@ -266,25 +276,44 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-
+        //  for  while 循环 的差别其中的实现的区别
     public int[][] flipAndInvertImage(int[][] A) {
-        LogUtil.i(JsonUtil.object2Json(A));
-        // 水平翻转  // 每位与0相与 &
-//        int [] temp = A[0];
-        //反转
-        for(int i=0;i<A.length;i++){
-            for(int j=0;j<A[i].length;j++){
-                int temp = A[i][j];
-                A[i][A[i].length-1] =A[i][j];
-                A[i][j] = temp;
 
+        //   对 数组进行  反序 翻转的操作，可以看作对每个元素进行该操作  a[i] = invertAndFlip(a[i]) // 如此一来直接翻转a[i]就ok
+        LogUtil.i(JsonUtil.object2Json(A));
+        for(int i=0;i<A.length;i++){
+            for(int j=0;j<A[i].length/2;j++){
+                int temp = A[i][j];
+                A[i][j] = A[i][A[i].length-1-j];
+                A[i][A[i].length-1-j] =temp;
             }
         }
         LogUtil.i(JsonUtil.object2Json(A));
+        for(int i=0;i<A.length;i++){
+            for(int j=0;j<A[i].length;j++){
+                if(A[i][j]==0){
+                    A[i][j]= 1;
+                }else{
+                    A[i][j]=0;
+                }
+            }
+        }
         return A;
     }
+    // 数组反序
+    public int[] invertArray(int [] a){
+        for(int i=0;i<a.length;i++){
+         int temp = a[i];
+         a[i]= a[a.length-1-i];
+         a[a.length-1-i] = temp;
+        }
+        return a;
+    }
+
+    // 如果 循环里面 采用move.toCharArray() 会timeLimited 减少对象的生成
     public boolean judgeCircle(String moves) {
 //        Node node = new Node(0,0);
+          char[] targetArray = moves.toCharArray();
 //        for(int i=0;i<moves.toCharArray().length;i++){
 //            if(moves.toCharArray()[i]==(char)'U'){
 //                node.y = node.y+1;
@@ -308,17 +337,17 @@ public class MainActivity extends BaseActivity {
         int right_count =0;
         int up_count = 0;
         int down_count = 0;
-        for(int i=0;i<moves.toCharArray().length;i++){
-            if(moves.toCharArray()[i]==(char)'U'){
+        for(int i=0;i<targetArray.length;i++){
+            if(targetArray[i]==(char)'U'){
                up_count++;
             }
-            if(moves.toCharArray()[i]==(char)'D'){
+            if(targetArray[i]==(char)'D'){
               down_count++;
             }
-            if(moves.toCharArray()[i]==(char)'R'){
+            if(targetArray[i]==(char)'R'){
                right_count++;
             }
-            if(moves.toCharArray()[i]==(char)'L'){
+            if(targetArray[i]==(char)'L'){
              left_count++;
             }
         }
@@ -327,6 +356,7 @@ public class MainActivity extends BaseActivity {
         }else{
             return false;
         }
+
     }
     class Node{
         int x ;
@@ -336,5 +366,88 @@ public class MainActivity extends BaseActivity {
             this.y = y;
         }
     }
+    // 遍历二叉树  // 肯定是递归的
 
+    public void traverseTrees(TreeNode node){
+
+    }
+    public String dgNode(TreeNode node){
+        int root = node.val;
+        int let=0;
+        int right=0;
+        if(node.left!=null){
+           dgNode(node.left);
+        }else{
+            let = node.left.val;
+        }
+        if(node.right!=null){
+            dgNode(node.left);
+        }else{
+            right = node.right.val;
+        }
+        return ""+root+let+right;
+    }
+
+    public TreeNode mergeTrees(TreeNode t1, TreeNode t2) {
+
+        return new TreeNode(0);
+    }
+
+
+    public int peakIndexInMountainArray(int[] A) {
+        // 黄金分割算法
+        // 有序列中寻找最高值  python可以利用api 直接寻找峰值
+        // 寻找队列中 第一个 A[i]>A[i+1]
+        // 二分法查找
+//        int index = -1;
+//        for(int i=1;i<A.length;i++) {
+//            if(A[i-1]<A[i]&&A[i]>A[i+1]){
+//                index = i;
+//            }
+//        }
+//        return index;
+         int l=0,r=A.length-1,mid;
+         while (l<r){
+             mid = (l+r)/2;// 取中间位置，判断峰值在前还是在后
+            if(A[mid]<A[mid+1]){
+                // 说明 峰值在后半段， 取后半段进行查找
+                l=mid;
+            }else if(A[mid]>A[mid+1]){
+                r = mid;
+            }else
+                return mid;
+         }
+         return 0;
+    }
+    //2n 的数组
+    public int arrayPairSum(int[] nums) {
+    //  得到的sum 要足够的大
+        int sum=0;
+//        for(int i=0;i<nums.length/2;i++){
+//            nums[i]=Math.min(nums[i],nums[nums.length-1-i]);
+//            nums[nums.length-1-i]=0;
+//            sum = sum+nums[i];
+//        }
+        // 尽可能将小的两两组合，大的两两组合
+        ArrayList<Integer> list = new ArrayList<Integer>();
+        for(int i=0;i<nums.length;i++){
+            list.add(nums[i]);
+        }
+        LogUtil.i("before:"+JsonUtil.object2Json(list));
+        Collections.sort(list);
+        LogUtil.i("after:"+JsonUtil.object2Json(list));
+        for(int i=0;i<list.size()-1;i=i+2){
+           list.set(i,Math.min(list.get(i),list.get(i+1)));
+           list.set(i+1,0);
+           sum = sum+list.get(i);
+        }
+        // 排序完毕后  index 为2n 的数 才需要添加进行计算
+        Arrays.sort(nums);
+        for(int i=0;i<nums.length;i+=2){
+            nums[i]=Math.min(nums[i],nums[nums[i+1]]);
+            sum = sum+nums[i];
+        }
+        return sum;
+
+    }
 }
