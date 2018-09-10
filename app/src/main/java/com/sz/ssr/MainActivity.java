@@ -64,6 +64,14 @@ public class MainActivity extends BaseActivity {
         int [] array= new int[]{8,7,6,5,4,3,2,1};
         invertArray(array);
         arrayPairSum(array);
+        int [][] fisrt= new int[][]{{1,2,3},{4,5,6},{7,8,9}};
+        int [][] second = new int[][]{{1,2,3},{4,5,6}};
+        transpose(second);
+
+
+        int[] array2 = new int[]{4,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10};
+        String s = "bbbcccdddaaa";
+        numberOfLines(array2,s);
     }
 
     private void loadData() {
@@ -442,12 +450,105 @@ public class MainActivity extends BaseActivity {
            sum = sum+list.get(i);
         }
         // 排序完毕后  index 为2n 的数 才需要添加进行计算
-        Arrays.sort(nums);
-        for(int i=0;i<nums.length;i+=2){
-            nums[i]=Math.min(nums[i],nums[nums[i+1]]);
-            sum = sum+nums[i];
-        }
+//        Arrays.sort(nums);
+//        for(int i=0;i<nums.length;i+=2){
+//            nums[i]=Math.min(nums[i],nums[nums[i+1]]);
+//            sum = sum+nums[i];
+//        }
         return sum;
 
     }
+
+    // 能被自身 每个位置上的数整除
+    public List<Integer> selfDividingNumbers(int left, int right) {
+        List<Integer> list = new ArrayList<>();
+        for(int i=left;i<right;i++){
+            if(isDividingNum(i)){
+             list.add(i);
+            }
+        }
+        return list;
+    }
+
+    private boolean isDividingNum(int i) {
+        if(1<=i&&i<10){
+            return true;
+        }
+        if(String.valueOf(i).contains("0")){
+            return false;
+        }
+        String str = String.valueOf(i);
+        for(int j=0;j<str.length();j++){
+            if(i%Integer.valueOf(str.substring(j,j+1))!=0){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // 将数组沿对角线进行翻转
+    public int[][] transpose(int[][] A) {
+        int [][] result = new int[A[0].length][A.length];
+        for(int i=0;i<A.length;i++){
+            for(int j=0;j<A[i].length;j++){
+                result[j][i] = A[i][j];
+            }
+        }
+        LogUtil.i(JsonUtil.object2Json(result));
+        return result;
+    }
+//    widths = [4,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10]
+//    S = "bbbcccdddaaa" 12
+//    Output: [2, 4]
+//    Explanation:
+//    All letters except 'a' have the same length of 10, and
+//"bbbcccdddaa" will cover 9 * 10 + 2 * 4 = 98 units.
+//    For the last 'a', it is written on the second line because
+//    there is only 2 units left in the first line.
+//    So the answer is 2 lines, plus 4 units in the second line.
+        //S的长度14 最少需要2行来写入所有的数据  4+10；
+
+    //bbbcccdddaa=98长度  +a =102>100 所以换行，最后一个a 长度是4 ，所以结果是[2,4]
+//    Example :
+//    Input:
+//    widths = [10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10]
+//    S = "abcdefghijklmnopqrstuvwxyz"
+//    Output: [3, 60]
+//    Explanation:
+//    All letters have the same length of 10. To write all 26 letters,
+//    we need two full lines and one line with 60 units.
+
+    // 对于字符char 来说 ch - 'a' 可以获取char 在字母表中的顺序
+    public int[] numberOfLines(int[] widths, String S) {
+        String sour="abcdefghijklmnopqrstuvwxyz";
+        Map<String,Integer> map = new HashMap<>();
+        int totalLength = 0;
+        for(int i=0;i<sour.length();i++){
+            map.put(sour.substring(i,i+1),widths[i]);
+        }
+        for(int i=0;i<S.length();i++){
+            if(map.containsKey(S.substring(i,i+1))){
+            totalLength = totalLength+map.get(S.substring(i,i+1));
+            }
+        }
+        // 计算每一行的最大的 长度，计算行数
+        int lineWidth = 0;
+        int perLineWidth = 0;
+        int lineNum=0;
+        for(int i=0;i<S.length();i++){
+            lineWidth = lineWidth+map.get(S.substring(i,i+1));
+            if(lineWidth>100){
+                perLineWidth = lineWidth-map.get(S.substring(i,i+1));
+                totalLength = totalLength-perLineWidth;
+                lineNum++;
+                lineWidth = map.get(S.substring(i,i+1));
+            }
+        }
+        if(totalLength!=0){
+            lineNum++;
+        }
+        return new int[]{lineNum,totalLength};
+    }
+
+
 }
