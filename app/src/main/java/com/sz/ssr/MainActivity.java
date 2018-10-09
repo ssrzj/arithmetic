@@ -1,41 +1,47 @@
 package com.sz.ssr;
 
+import android.content.Intent;
+import android.icu.text.UnicodeSetSpanner;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.design.widget.BottomNavigationView;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.ViewUtils;
-import android.util.Log;
-import android.view.MenuItem;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebView;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RadioButton;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
+import android.widget.SeekBar;
 
+import com.jungly.gridpasswordview.GridPasswordView;
 import com.shenzhen.baselib.adapter.BaseAdapterHelper;
 import com.shenzhen.baselib.adapter.BaseQuickAdapter;
 import com.shenzhen.baselib.utils.JsonUtil;
 import com.shenzhen.baselib.utils.LogUtil;
 import com.shenzhen.baselib.utils.ToastUtil;
-import com.shenzhen.baselib.utils.ViewBinderUtil;
 import com.shenzhen.baselib.utils.ViewUtil;
+import com.shenzhen.baselib.widget.DialogCustom;
+import com.sz.network.ICallback;
+import com.sz.network.IRequestManager;
+import com.sz.network.RequestFactory;
 import com.sz.ssr.activity.base.BaseActivity;
-import com.sz.ssr.utils.ScreenUtils;
+import com.sz.ssr.activity.common.SettingActivity;
+import com.sz.ssr.activity.common.WebActivity;
+import com.sz.ssr.constant.Constant;
+import com.sz.ssr.widget.RadarWidget.RadarData;
+import com.sz.ssr.widget.RadarWidget.RadarView;
 
-import java.sql.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 
 public class MainActivity extends BaseActivity {
     @BindView(R.id.act_main_drawerLayout)
@@ -43,35 +49,137 @@ public class MainActivity extends BaseActivity {
     @BindView(R.id.act_main_left_ll_title)
     LinearLayout ll_left_title;
     @BindView(R.id.act_main_left_list)
-    ListView     mListView;
+    ListView mListView;
     @BindView(R.id.act_main_left_container)
     RelativeLayout rl_left_menu_container;
-    BaseQuickAdapter<String,BaseAdapterHelper> mAdapter;
-    int[] resIds = new int[]{R.drawable.icon_arithmetic_black,R.drawable.icon_github_black,R.drawable.icon_about,R.drawable.icon_settting};
+    @BindView(R.id.fl_title_menu)
+    FrameLayout fl_title_menu;
+    @BindView(R.id.rb_music)
+    RadioButton rb_music;
+    @BindView(R.id.rb_arithmetic)
+    RadioButton rb_arithmetic;
+    @BindView(R.id.rb_article)
+    RadioButton rb_article;
+    @BindView(R.id.act_main_radar)
+    RadarView radarView;
+    @BindView(R.id.act_main_sb_first)
+    SeekBar sb_first;
+    @BindView(R.id.act_main_sb_second)
+    SeekBar sb_second;
+
+
+    DialogCustom mDialog;
+    GridPasswordView gvPassword;
+    BaseQuickAdapter<String, BaseAdapterHelper> mAdapter;
+    int[] resIds = new int[]{R.drawable.icon_arithmetic_black, R.drawable.icon_github_black, R.drawable.icon_about, R.drawable.icon_settting,R.drawable.icon_password};
     List<String> left_menu = new ArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+        initRadarView();
+        initSeekBar();
         initAdapter();
         initView();
+        initListener();
         loadData();
 //        [[1,1,0,0],[1,0,0,1],[0,1,1,1],[1,0,1,0]]
-        int [][] target =new int[][]{{1,1,0,0},{1,0,0,1},{0,1,1,1},{1,0,1,0}};
+        int[][] target = new int[][]{{1, 1, 0, 0}, {1, 0, 0, 1}, {0, 1, 1, 1}, {1, 0, 1, 0}};
         flipAndInvertImage(target);
         // 1维数组反序
-        int [] array= new int[]{8,7,6,5,4,3,2,1};
+        int[] array = new int[]{8, 7, 6, 5, 4, 3, 2, 1};
         invertArray(array);
         arrayPairSum(array);
-        int [][] fisrt= new int[][]{{1,2,3},{4,5,6},{7,8,9}};
-        int [][] second = new int[][]{{1,2,3},{4,5,6}};
+        int[][] fisrt = new int[][]{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+        int[][] second = new int[][]{{1, 2, 3}, {4, 5, 6}};
         transpose(second);
 
 
-        int[] array2 = new int[]{4,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10};
+        int[] array2 = new int[]{4, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
         String s = "bbbcccdddaaa";
-        numberOfLines(array2,s);
+        numberOfLines(array2, s);
+
+        int [] array3 = new int[]{3,1,2,4};
+        sortArrayByParity(array3);
+
+        testNetWork();
+
+    }
+
+    private void initSeekBar() {
+        sb_first.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                LogUtil.i("progress1:"+progress);
+                radarView.updateFirst(progress);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+        sb_second.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                LogUtil.i("progress2:"+progress);
+                radarView.updateSecond(progress);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+
+    }
+
+    private void initRadarView() {
+        List<RadarData> dataList = new ArrayList<>();
+        List<RadarData> secondDataList = new ArrayList<>();
+        for(int i=1;i<7;i++){
+            RadarData data = new RadarData("标题"+i,80);
+            dataList.add(data);
+        }
+        for(int i=7;i>1;i--){
+            RadarData data = new RadarData("标题"+i,60);
+            secondDataList.add(data);
+        }
+        radarView.setDataList(dataList);
+        radarView.setSecondDataList(secondDataList);
+    }
+
+    private void testNetWork() {
+        IRequestManager manager = RequestFactory.getRequestManager(1);
+
+        manager.get(new ICallback() {
+            @Override
+            public void onSucess() {
+
+            }
+
+            @Override
+            public void onFailed() {
+
+            }
+        });
+    }
+
+    private void initListener() {
+
     }
 
     private void loadData() {
@@ -79,51 +187,126 @@ public class MainActivity extends BaseActivity {
         left_menu.add("Github");
         left_menu.add("关于");
         left_menu.add("设置");
+        left_menu.add("密码");
         mAdapter.replaceAll(left_menu);
     }
 
     private void initAdapter() {
-        mAdapter = new BaseQuickAdapter<String, BaseAdapterHelper>(this,R.layout.item_left_menu) {
+        mAdapter = new BaseQuickAdapter<String, BaseAdapterHelper>(this, R.layout.item_left_menu) {
             @Override
             protected void convert(BaseAdapterHelper helper, final String item) {
-                helper.setText(R.id.item_left_menu_tv_info,item);
-                helper.setImageResource(R.id.item_left_menu_iv,resIds[left_menu.indexOf(item)]);
-                helper.setOnClickListener(R.id.item_left_menu_ll_container,new ItemClickListener(item));
+                helper.setText(R.id.item_left_menu_tv_info, item);
+                helper.setImageResource(R.id.item_left_menu_iv, resIds[left_menu.indexOf(item)]);
+                helper.setOnClickListener(R.id.item_left_menu_ll_container, new ItemClickListener(item));
             }
+
             @Override
             protected BaseAdapterHelper getAdapterHelper(int position, View convertView, ViewGroup parent) {
-                return BaseAdapterHelper.get(MainActivity.this,convertView,parent,R.layout.item_left_menu);
+                return BaseAdapterHelper.get(MainActivity.this, convertView, parent, R.layout.item_left_menu);
             }
         };
     }
-    class ItemClickListener implements View.OnClickListener{
+
+    @OnClick({R.id.fl_title_menu, R.id.rb_music, R.id.rb_article, R.id.rb_arithmetic,R.id.act_main_left_container})
+    public void onViewClicked(View view) {
+        switch (view.getId()) {
+            case R.id.fl_title_menu:
+                if(drawerLayout.isDrawerOpen(rl_left_menu_container)){
+                    drawerLayout.closeDrawer(rl_left_menu_container);
+                }else{
+                    drawerLayout.openDrawer(rl_left_menu_container);
+                }
+                break;
+            case R.id.act_main_left_container:
+                if(drawerLayout.isDrawerOpen(rl_left_menu_container)){
+                    drawerLayout.closeDrawer(rl_left_menu_container);
+                }
+                break;
+            case R.id.rb_music:
+                break;
+            case R.id.rb_article:
+                break;
+            case R.id.rb_arithmetic:
+                break;  
+        }
+    }
+
+    class ItemClickListener implements View.OnClickListener {
         int index;
         public ItemClickListener(String item) {
-        index = left_menu.indexOf(item);
+            index = left_menu.indexOf(item);
         }
         @Override
         public void onClick(View v) {
-            switch (index){
+            switch (index) {
                 case 0:
-                    ToastUtil.showToast("算法");
+                    Intent intent = new Intent(MainActivity.this, WebActivity.class);
+                    intent.putExtra(Constant.WEB_TITLE,"小痒虫");
+                    intent.putExtra(Constant.WEB_URL,"http://www.xiaoyangchong.com/");
+                    startActivity(intent);
                     break;
                 case 1:
-                    ToastUtil.showToast("Github");
+                    Intent intent2 = new Intent(MainActivity.this, WebActivity.class);
+                    intent2.putExtra(Constant.WEB_TITLE,"Github");
+                    intent2.putExtra(Constant.WEB_URL,"https://github.com/ssrzj");
+                    startActivity(intent2);
                     break;
                 case 2:
                     ToastUtil.showToast("关于");
                     break;
                 case 3:
-                    ToastUtil.showToast("设置");
+                    startActivity(new Intent(MainActivity.this, SettingActivity.class));
+                    break;
+                case 4:
+                    showConfirmPassword();
                     break;
             }
         }
     }
 
+    private void showConfirmPassword() {
+        if(mDialog==null){
+            View view = LayoutInflater.from(this).inflate(R.layout.dialog_password,null);
+            gvPassword = view.findViewById(R.id.dialog_password_gv_password);
+            mDialog = new DialogCustom(this);
+            mDialog.setTextTitle("验证密码");
+            mDialog.setCustomView(view);
+            mDialog.setmListener(new DialogCustom.SDDialogCustomListener() {
+                @Override
+                public void onClickCancel(View v, DialogCustom dialog) {
+                    if(gvPassword!=null){
+                        gvPassword.clearPassword();;
+                    }
+                }
+
+                @Override
+                public void onClickConfirm(View v, DialogCustom dialog) {
+                    if(gvPassword!=null){
+                        if(gvPassword.getPassWord().equals("036611")){
+                            ToastUtil.showToast("密码正确");
+                        }else{
+                            ToastUtil.showToast("密码错误");
+                        }
+
+                        mDialog.dismiss();
+                    }
+                }
+
+                @Override
+                public void onDismiss(DialogCustom dialog) {
+                    if(gvPassword!=null){
+                        gvPassword.clearPassword();;
+                    }
+                }
+            });
+        }
+        mDialog.showCenter();
+    }
+
     private void initView() {
-        ViewUtil.setViewWidth(rl_left_menu_container, ViewUtil.getScreenWidth()/3*2);
-        ViewUtil.setViewHeight(ll_left_title,ViewUtil.getScreenWidth()/3*2);
-        ViewUtil.setViewWidth(ll_left_title,ViewUtil.getScreenWidth()/3*2);
+        ViewUtil.setViewWidth(rl_left_menu_container, ViewUtil.getScreenWidth() / 3 * 2);
+        ViewUtil.setViewHeight(ll_left_title, ViewUtil.getScreenWidth() / 3 * 2);
+        ViewUtil.setViewWidth(ll_left_title, ViewUtil.getScreenWidth() / 3 * 2);
         mListView.setAdapter(mAdapter);
     }
 
@@ -149,11 +332,10 @@ public class MainActivity extends BaseActivity {
 //        return count;
 
 
-        int res=0;
-        for(char c : S.toCharArray()){
-            if(J.indexOf(c) != -1){
+        int res = 0;
+        for (char c : S.toCharArray()) {
+            if (J.indexOf(c) != -1) {
                 res++;
-
 
 
             }
@@ -180,18 +362,18 @@ public class MainActivity extends BaseActivity {
         //StringBuilder 为了兼容StringBuffer 但是没有同步保证   StringBuffer是线程安全的
         //StringBuilder  当字符序列长度超过内部容量的时候会自动扩张  默认长度16
         //StringBuilder.append(sb)   sb ==null时     拼接的是'null'   toString 方法不是 HashCode值
-          // 通常有限使用StringBuilder   StringBuffter加锁，是加载append,insert 之类的方法中，source CharSequence 依旧可以被其他线程访问
+        // 通常有限使用StringBuilder   StringBuffter加锁，是加载append,insert 之类的方法中，source CharSequence 依旧可以被其他线程访问
         //StringBuidler，StringBuffter区别
         //String.toLowerCase() char.toLowerCase() api
         // char  与int 之间的转换,String 与Int之间的转换
         char[] source_array = str.toCharArray();
         char[] result_array = new char[source_array.length];
-        for(int i=0;i<source_array.length;i++){
-         if(65<=source_array[i]&&source_array[i]<=90){
-            result_array[i] = (char) (source_array[i]+32);
-         }else{
-            result_array[i] = source_array[i];
-         }
+        for (int i = 0; i < source_array.length; i++) {
+            if (65 <= source_array[i] && source_array[i] <= 90) {
+                result_array[i] = (char) (source_array[i] + 32);
+            } else {
+                result_array[i] = source_array[i];
+            }
         }
         String[] tt = new String[]{""};
         return new String(result_array);
@@ -205,34 +387,34 @@ public class MainActivity extends BaseActivity {
 
         // 判断数组中有多少少个不相同的数组 1、利用map,2利用HashSet.add(),过滤重复的
         // 将word 元素转换为moCode 组装而成的
-     Map map = new HashMap<String,String>();
-     String [] moCode = new String []{".-","-...","-.-.","-..",".","..-.","--.","....","..",".---","-.-",".-..","--","-.","---",".--.",
-                "--.-",".-.","...","-","..-","...-",".--","-..-","-.--","--.."};
-     String [] letter_arrary = new String[]{"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"};
-     for(int i=0;i<26;i++){
-         map.put(letter_arrary[i],moCode[i]);
-     }
-     String[] change_array = new String[words.length];
-     for(int i=0;i<words.length;i++){
-         char[] word_array = words[i].toCharArray();
-           for(int j=0;j<word_array.length;j++){
-                  if(j!=0){
-                  change_array[i]=change_array[i]+map.get(String.valueOf(word_array[j]));
-                  }else{
-                   change_array[i] =(String) map.get(String.valueOf(word_array[j]));
-                  }
-           }
-         words[i] = change_array[i];
-     }
-     // words  moCode 组成，比较各自不同
-        int count = 0;
-        for(int i=0;i<words.length;i++){
-         if(!map.containsKey(String.valueOf(words[i]))){
-         map.put(words[i],i);
-         count++;
-         }
+        Map map = new HashMap<String, String>();
+        String[] moCode = new String[]{".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....", "..", ".---", "-.-", ".-..", "--", "-.", "---", ".--.",
+                "--.-", ".-.", "...", "-", "..-", "...-", ".--", "-..-", "-.--", "--.."};
+        String[] letter_arrary = new String[]{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"};
+        for (int i = 0; i < 26; i++) {
+            map.put(letter_arrary[i], moCode[i]);
         }
-     return  count;
+        String[] change_array = new String[words.length];
+        for (int i = 0; i < words.length; i++) {
+            char[] word_array = words[i].toCharArray();
+            for (int j = 0; j < word_array.length; j++) {
+                if (j != 0) {
+                    change_array[i] = change_array[i] + map.get(String.valueOf(word_array[j]));
+                } else {
+                    change_array[i] = (String) map.get(String.valueOf(word_array[j]));
+                }
+            }
+            words[i] = change_array[i];
+        }
+        // words  moCode 组成，比较各自不同
+        int count = 0;
+        for (int i = 0; i < words.length; i++) {
+            if (!map.containsKey(String.valueOf(words[i]))) {
+                map.put(words[i], i);
+                count++;
+            }
+        }
+        return count;
     }
 
     public List<TreeNode> findDuplicateSubtrees(TreeNode root) {
@@ -240,11 +422,14 @@ public class MainActivity extends BaseActivity {
         return null;
     }
 
-    class TreeNode{
-    int val;
-    TreeNode left;
-    TreeNode right;
-    TreeNode(int x) { val = x; }
+    class TreeNode {
+        int val;
+        TreeNode left;
+        TreeNode right;
+
+        TreeNode(int x) {
+            val = x;
+        }
     }
     // a 对应的二进制中1 的个数       逻辑运算符以及位移运算符
     //  偶数对应的二进制编码 最后一位肯定是0 ，所以判断奇偶可以用 a&1来进行判断，若果结果是0，则是偶数，否则是奇数
@@ -260,60 +445,60 @@ public class MainActivity extends BaseActivity {
 //    }
 
 
-
-
     public int hammingDistance(int x, int y) {
 //        return Integer.bitCount(x^y);
-        int result = x^y;
+        int result = x ^ y;
         String binaryCode = Integer.toBinaryString(result);
         int count = 0;
-        for(int i=0;i<binaryCode.toCharArray().length;i++){
-            if(binaryCode.toCharArray()[i]==(char)'1'){
+        for (int i = 0; i < binaryCode.toCharArray().length; i++) {
+            if (binaryCode.toCharArray()[i] == (char) '1') {
                 count++;
             }
         }
-        LogUtil.e("count:"+count);
+        LogUtil.e("count:" + count);
         return count;
     }
-    public void test(int x){
-        String binaryCode = Integer.toBinaryString(x^x-1);
-        LogUtil.i("x:"+x+"|"+binaryCode);
-        if(x!=0){
-            x = x-1^x;
+
+    public void test(int x) {
+        String binaryCode = Integer.toBinaryString(x ^ x - 1);
+        LogUtil.i("x:" + x + "|" + binaryCode);
+        if (x != 0) {
+            x = x - 1 ^ x;
             test(x);
         }
     }
 
-        //  for  while 循环 的差别其中的实现的区别
+    //  for  while 循环 的差别其中的实现的区别
     public int[][] flipAndInvertImage(int[][] A) {
 
         //   对 数组进行  反序 翻转的操作，可以看作对每个元素进行该操作  a[i] = invertAndFlip(a[i]) // 如此一来直接翻转a[i]就ok
         LogUtil.i(JsonUtil.object2Json(A));
-        for(int i=0;i<A.length;i++){
-            for(int j=0;j<A[i].length/2;j++){
+        for (int i = 0; i < A.length; i++) {
+            for (int j = 0; j < A[i].length / 2; j++) {
                 int temp = A[i][j];
-                A[i][j] = A[i][A[i].length-1-j];
-                A[i][A[i].length-1-j] =temp;
+                A[i][j] = A[i][A[i].length - 1 - j];
+                A[i][A[i].length - 1 - j] = temp;
             }
         }
         LogUtil.i(JsonUtil.object2Json(A));
-        for(int i=0;i<A.length;i++){
-            for(int j=0;j<A[i].length;j++){
-                if(A[i][j]==0){
-                    A[i][j]= 1;
-                }else{
-                    A[i][j]=0;
+        for (int i = 0; i < A.length; i++) {
+            for (int j = 0; j < A[i].length; j++) {
+                if (A[i][j] == 0) {
+                    A[i][j] = 1;
+                } else {
+                    A[i][j] = 0;
                 }
             }
         }
         return A;
     }
+
     // 数组反序
-    public int[] invertArray(int [] a){
-        for(int i=0;i<a.length;i++){
-         int temp = a[i];
-         a[i]= a[a.length-1-i];
-         a[a.length-1-i] = temp;
+    public int[] invertArray(int[] a) {
+        for (int i = 0; i < a.length; i++) {
+            int temp = a[i];
+            a[i] = a[a.length - 1 - i];
+            a[a.length - 1 - i] = temp;
         }
         return a;
     }
@@ -321,7 +506,7 @@ public class MainActivity extends BaseActivity {
     // 如果 循环里面 采用move.toCharArray() 会timeLimited 减少对象的生成
     public boolean judgeCircle(String moves) {
 //        Node node = new Node(0,0);
-          char[] targetArray = moves.toCharArray();
+        char[] targetArray = moves.toCharArray();
 //        for(int i=0;i<moves.toCharArray().length;i++){
 //            if(moves.toCharArray()[i]==(char)'U'){
 //                node.y = node.y+1;
@@ -341,34 +526,36 @@ public class MainActivity extends BaseActivity {
 //        }else{
 //            return false;
 //        }
-        int left_count=0;
-        int right_count =0;
+        int left_count = 0;
+        int right_count = 0;
         int up_count = 0;
         int down_count = 0;
-        for(int i=0;i<targetArray.length;i++){
-            if(targetArray[i]==(char)'U'){
-               up_count++;
+        for (int i = 0; i < targetArray.length; i++) {
+            if (targetArray[i] == (char) 'U') {
+                up_count++;
             }
-            if(targetArray[i]==(char)'D'){
-              down_count++;
+            if (targetArray[i] == (char) 'D') {
+                down_count++;
             }
-            if(targetArray[i]==(char)'R'){
-               right_count++;
+            if (targetArray[i] == (char) 'R') {
+                right_count++;
             }
-            if(targetArray[i]==(char)'L'){
-             left_count++;
+            if (targetArray[i] == (char) 'L') {
+                left_count++;
             }
         }
-        if(left_count==right_count&&up_count==down_count){
+        if (left_count == right_count && up_count == down_count) {
             return true;
-        }else{
+        } else {
             return false;
         }
 
     }
-    class Node{
-        int x ;
+
+    class Node {
+        int x;
         int y;
+
         public Node(int x, int y) {
             this.x = x;
             this.y = y;
@@ -376,24 +563,25 @@ public class MainActivity extends BaseActivity {
     }
     // 遍历二叉树  // 肯定是递归的
 
-    public void traverseTrees(TreeNode node){
+    public void traverseTrees(TreeNode node) {
 
     }
-    public String dgNode(TreeNode node){
+
+    public String dgNode(TreeNode node) {
         int root = node.val;
-        int let=0;
-        int right=0;
-        if(node.left!=null){
-           dgNode(node.left);
-        }else{
+        int let = 0;
+        int right = 0;
+        if (node.left != null) {
+            dgNode(node.left);
+        } else {
             let = node.left.val;
         }
-        if(node.right!=null){
+        if (node.right != null) {
             dgNode(node.left);
-        }else{
+        } else {
             right = node.right.val;
         }
-        return ""+root+let+right;
+        return "" + root + let + right;
     }
 
     public TreeNode mergeTrees(TreeNode t1, TreeNode t2) {
@@ -414,23 +602,24 @@ public class MainActivity extends BaseActivity {
 //            }
 //        }
 //        return index;
-         int l=0,r=A.length-1,mid;
-         while (l<r){
-             mid = (l+r)/2;// 取中间位置，判断峰值在前还是在后
-            if(A[mid]<A[mid+1]){
+        int l = 0, r = A.length - 1, mid;
+        while (l < r) {
+            mid = (l + r) / 2;// 取中间位置，判断峰值在前还是在后
+            if (A[mid] < A[mid + 1]) {
                 // 说明 峰值在后半段， 取后半段进行查找
-                l=mid;
-            }else if(A[mid]>A[mid+1]){
+                l = mid;
+            } else if (A[mid] > A[mid + 1]) {
                 r = mid;
-            }else
+            } else
                 return mid;
-         }
-         return 0;
+        }
+        return 0;
     }
+
     //2n 的数组
     public int arrayPairSum(int[] nums) {
-    //  得到的sum 要足够的大
-        int sum=0;
+        //  得到的sum 要足够的大
+        int sum = 0;
 //        for(int i=0;i<nums.length/2;i++){
 //            nums[i]=Math.min(nums[i],nums[nums.length-1-i]);
 //            nums[nums.length-1-i]=0;
@@ -438,16 +627,16 @@ public class MainActivity extends BaseActivity {
 //        }
         // 尽可能将小的两两组合，大的两两组合
         ArrayList<Integer> list = new ArrayList<Integer>();
-        for(int i=0;i<nums.length;i++){
+        for (int i = 0; i < nums.length; i++) {
             list.add(nums[i]);
         }
-        LogUtil.i("before:"+JsonUtil.object2Json(list));
+        LogUtil.i("before:" + JsonUtil.object2Json(list));
         Collections.sort(list);
-        LogUtil.i("after:"+JsonUtil.object2Json(list));
-        for(int i=0;i<list.size()-1;i=i+2){
-           list.set(i,Math.min(list.get(i),list.get(i+1)));
-           list.set(i+1,0);
-           sum = sum+list.get(i);
+        LogUtil.i("after:" + JsonUtil.object2Json(list));
+        for (int i = 0; i < list.size() - 1; i = i + 2) {
+            list.set(i, Math.min(list.get(i), list.get(i + 1)));
+            list.set(i + 1, 0);
+            sum = sum + list.get(i);
         }
         // 排序完毕后  index 为2n 的数 才需要添加进行计算
 //        Arrays.sort(nums);
@@ -462,24 +651,24 @@ public class MainActivity extends BaseActivity {
     // 能被自身 每个位置上的数整除
     public List<Integer> selfDividingNumbers(int left, int right) {
         List<Integer> list = new ArrayList<>();
-        for(int i=left;i<right;i++){
-            if(isDividingNum(i)){
-             list.add(i);
+        for (int i = left; i < right; i++) {
+            if (isDividingNum(i)) {
+                list.add(i);
             }
         }
         return list;
     }
 
     private boolean isDividingNum(int i) {
-        if(1<=i&&i<10){
+        if (1 <= i && i < 10) {
             return true;
         }
-        if(String.valueOf(i).contains("0")){
+        if (String.valueOf(i).contains("0")) {
             return false;
         }
         String str = String.valueOf(i);
-        for(int j=0;j<str.length();j++){
-            if(i%Integer.valueOf(str.substring(j,j+1))!=0){
+        for (int j = 0; j < str.length(); j++) {
+            if (i % Integer.valueOf(str.substring(j, j + 1)) != 0) {
                 return false;
             }
         }
@@ -488,9 +677,9 @@ public class MainActivity extends BaseActivity {
 
     // 将数组沿对角线进行翻转
     public int[][] transpose(int[][] A) {
-        int [][] result = new int[A[0].length][A.length];
-        for(int i=0;i<A.length;i++){
-            for(int j=0;j<A[i].length;j++){
+        int[][] result = new int[A[0].length][A.length];
+        for (int i = 0; i < A.length; i++) {
+            for (int j = 0; j < A[i].length; j++) {
                 result[j][i] = A[i][j];
             }
         }
@@ -506,7 +695,7 @@ public class MainActivity extends BaseActivity {
 //    For the last 'a', it is written on the second line because
 //    there is only 2 units left in the first line.
 //    So the answer is 2 lines, plus 4 units in the second line.
-        //S的长度14 最少需要2行来写入所有的数据  4+10；
+    //S的长度14 最少需要2行来写入所有的数据  4+10；
 
     //bbbcccdddaa=98长度  +a =102>100 所以换行，最后一个a 长度是4 ，所以结果是[2,4]
 //    Example :
@@ -520,35 +709,57 @@ public class MainActivity extends BaseActivity {
 
     // 对于字符char 来说 ch - 'a' 可以获取char 在字母表中的顺序
     public int[] numberOfLines(int[] widths, String S) {
-        String sour="abcdefghijklmnopqrstuvwxyz";
-        Map<String,Integer> map = new HashMap<>();
+        String sour = "abcdefghijklmnopqrstuvwxyz";
+        Map<String, Integer> map = new HashMap<>();
         int totalLength = 0;
-        for(int i=0;i<sour.length();i++){
-            map.put(sour.substring(i,i+1),widths[i]);
+        for (int i = 0; i < sour.length(); i++) {
+            map.put(sour.substring(i, i + 1), widths[i]);
         }
-        for(int i=0;i<S.length();i++){
-            if(map.containsKey(S.substring(i,i+1))){
-            totalLength = totalLength+map.get(S.substring(i,i+1));
+        for (int i = 0; i < S.length(); i++) {
+            if (map.containsKey(S.substring(i, i + 1))) {
+                totalLength = totalLength + map.get(S.substring(i, i + 1));
             }
         }
         // 计算每一行的最大的 长度，计算行数
         int lineWidth = 0;
         int perLineWidth = 0;
-        int lineNum=0;
-        for(int i=0;i<S.length();i++){
-            lineWidth = lineWidth+map.get(S.substring(i,i+1));
-            if(lineWidth>100){
-                perLineWidth = lineWidth-map.get(S.substring(i,i+1));
-                totalLength = totalLength-perLineWidth;
+        int lineNum = 0;
+        for (int i = 0; i < S.length(); i++) {
+            lineWidth = lineWidth + map.get(S.substring(i, i + 1));
+            if (lineWidth > 100) {
+                perLineWidth = lineWidth - map.get(S.substring(i, i + 1));
+                totalLength = totalLength - perLineWidth;
                 lineNum++;
-                lineWidth = map.get(S.substring(i,i+1));
+                lineWidth = map.get(S.substring(i, i + 1));
             }
         }
-        if(totalLength!=0){
+        if (totalLength != 0) {
             lineNum++;
         }
-        return new int[]{lineNum,totalLength};
+        return new int[]{lineNum, totalLength};
     }
 
+    // 字符串以空格隔开，每个单词反序
+    public String reverseWords(String s) {
+        s.replaceAll(" ", "|");
+        String[] target = s.split("|");
+        for (int i = 0; i < target.length; i++) {
 
+        }
+        return s;
+    }
+
+    // 奇数元素后移    在数组a 中，将符合条件的元素 转移到某个区间
+    public int[] sortArrayByParity(int[] A) {
+        int [] B = new int[A.length];
+        for(int i=0,j=A.length-1;i<A.length;i++){
+            if((A[i]&1)!=0){
+                // 奇数的处理方式
+                B[B.length-1-i] = A[i];
+            }else{
+                B[B.length-1-i]=A[i];
+            }
+        }
+        return B;
+    }
 }
